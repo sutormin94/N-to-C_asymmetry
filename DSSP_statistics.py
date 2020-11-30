@@ -11,6 +11,7 @@
 #######
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 #######
 #Variables to be defined.
@@ -129,7 +130,81 @@ def ss_element_frequency_matrix(structures_dict, window_width):
        
     print(ss_pfm_N) 
     print(ss_pfm_C)   
-    return ss_pfm_N, ss_pfm_C
+    return ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C
+
+
+#######
+#Enrichment of secondary structure elements N- over C-terminus.
+#######
+
+def ss_ele_enrichment(ss_pfm_N, ss_pfm_C):
+    
+    enrichment_N_to_C_dict={}
+    for letter_code, frequency_row_N in ss_pfm_N.items():
+        frequency_N=np.array(frequency_row_N)
+        frequency_C=np.array(ss_pfm_C[letter_code][::-1])
+        enrichment_N_to_C=frequency_N/frequency_C
+        enrichment_N_to_C_dict[letter_code]=enrichment_N_to_C
+    
+    return enrichment_N_to_C_dict
+
+
+#######
+#Terminal beta-strands relations: simultaneous occurence or independant?.
+#######
+
+def termini_dependance(ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C, local_window_width):
+    
+    DSSP_alphabet=['H', 'B', 'E', 'G', 'I', 'T', 'S', '-']
+    
+    #Calculate observed frequences of elements co-occurence coordinate-wise.
+    Observed_matrices_dict={}
+    for letter_code in DSSP_alphabet:
+        Ni_Cj_freq_2d_ar=[]
+        for Ni in range(local_window_width):
+            Cj_freq_1d_ar=[]
+            for Cj in range(local_window_width):
+                N_column_i=ss_matrix_N[Ni]
+                C_column_j=ss_matrix_C[-Cj-1]
+                Ni_Cj_counts=0
+                for structure_k in range(len(N_column_i)):
+                    if (N_column_i[structure_k]==letter_code) and (C_column_j[structure_k]==letter_code):
+                        Ni_Cj_counts+=1
+                Ni_Cj_frequency=Ni_Cj_counts/float(len(N_column_i))
+                Cj_freq_1d_ar.append(Ni_Cj_frequency)
+        
+            Ni_Cj_freq_2d_ar.append(Cj_freq_1d_ar)
+        
+        Ni_Cj_freq_2d_ar_np=np.array(Ni_Cj_freq_2d_ar)
+        Observed_matrices_dict[letter_code]=Ni_Cj_freq_2d_ar_np
+        
+    #Calculate expected frequences of elements co-occurence coordinate-wise.
+    Expected_matrices_dict={}
+    for letter_code in DSSP_alphabet:
+        Expected_Ni_Cj_freq_2d_ar=[]
+        for Ni in range(local_window_width):
+            Expected_Cj_freq_1d_ar=[]
+            for Cj in range(local_window_width):  
+                Ni_frequency=ss_pfm_N[letter_code][Ni]
+                Cj_frequency=ss_pfm_C[letter_code][-Cj-1]
+                Expected_Ni_Cj_frequency=Ni_frequency*Cj_frequency
+                Expected_Cj_freq_1d_ar.append(Expected_Ni_Cj_frequency)
+            Expected_Ni_Cj_freq_2d_ar.append(Expected_Cj_freq_1d_ar)
+            
+        Expected_Ni_Cj_freq_2d_ar_np=np.array(Expected_Ni_Cj_freq_2d_ar)
+        Expected_matrices_dict[letter_code]=Expected_Ni_Cj_freq_2d_ar_np
+
+    #Calculate observed over expected ratio of frequences of elements co-occurence coordinate-wise.
+    
+    Obs_over_exp_matrices_dict={}
+    for letter_code in DSSP_alphabet:
+        Obs_over_exp_freq_matrix=np.divide(Observed_matrices_dict[letter_code], Expected_matrices_dict[letter_code])
+        Obs_over_exp_matrices_dict[letter_code]=Obs_over_exp_freq_matrix
+        
+        print(letter_code, Obs_over_exp_freq_matrix)
+    
+    return Obs_over_exp_matrices_dict
+
 
 
 #######
@@ -178,7 +253,7 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[0,1].tick_params(axis='x', which='minor', length=0)
     plot[0,1].set_xlabel('Distance, aa')
     plot[0,1].set_ylabel('Frequency')  
-    plot[0,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center center')
+    plot[0,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center')
     
     plot[1,0].plot(X_N, ss_pfm_N_short['I'], color='#94fff1', linewidth=2, label=r'$\pi$-helix short domains')
     plot[1,0].plot(X_C, ss_pfm_C_short['I'], color='#94fff1', linewidth=2)
@@ -195,7 +270,7 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[1,0].tick_params(axis='x', which='minor', length=0)
     plot[1,0].set_xlabel('Distance, aa')
     plot[1,0].set_ylabel('Frequency')  
-    plot[1,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center center')
+    plot[1,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center')
     
     plot[1,1].plot(X_N, ss_pfm_N_short['S'], color='#94fff1', linewidth=2, label=r'bend short domains')
     plot[1,1].plot(X_C, ss_pfm_C_short['S'], color='#94fff1', linewidth=2)
@@ -212,13 +287,146 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[1,1].tick_params(axis='x', which='minor', length=0)
     plot[1,1].set_xlabel('Distance, aa')
     plot[1,1].set_ylabel('Frequency')  
-    plot[1,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center center')    
+    plot[1,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center')    
     
     
     plt.tight_layout()
     plt.show()    
     
     return
+
+
+#######
+#Enrichment of ss elements at N-terminus over the elements at C-terminus.
+#######
+
+def N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width):
+    
+    #Plot enrichment of ss elements as a function of distance from termini.
+    X=range(window_width)
+    xticks_ar=list(range(0,51,10))
+    xticklabels_ar=[0,10,20,30,40,50]
+    xticks_spec=[-4]
+    xticklabels_spec=['N-\nC-', ]
+    fig, plot=plt.subplots(2,2,figsize=(12,6), dpi=100)
+    plot[0,0].plot(X, enrichment_N_to_C_dict_short['H'], color='#94fff1', linewidth=2, label=r'$\alpha$-helix short domains')
+    plot[0,0].plot(X, enrichment_N_to_C_dict_long['H'], color='#ab658c', linewidth=2, label=r'$\alpha$-helix long domains')
+    plot[0,0].plot(X, enrichment_N_to_C_dict_short['E'], color='#59acff', linewidth=2, label=r'$\beta$-strand short domains')
+    plot[0,0].plot(X, enrichment_N_to_C_dict_long['E'], color='#ffec59', linewidth=2, label=r'$\beta$-strand long domains')   
+    plot[0,0].set_xticks(xticks_ar)
+    plot[0,0].set_xticklabels(xticklabels_ar)
+    plot[0,0].set_xticks(xticks_spec, minor=True)
+    plot[0,0].set_xticklabels(xticklabels_spec, minor=True)
+    plot[0,0].tick_params(axis='x', which='minor', length=0)
+    plot[0,0].set_xlabel('Distance, aa')
+    plot[0,0].set_ylabel('Enrichment p(N)/p(C)') 
+    plot[0,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='upper center')
+    
+    plot[0,1].plot(X, enrichment_N_to_C_dict_short['B'], color='#94fff1', linewidth=2, label=r'$\beta$-bridge short domains')
+    plot[0,1].plot(X, enrichment_N_to_C_dict_long['B'], color='#ab658c', linewidth=2, label=r'$\beta$-bridge long domains')
+    plot[0,1].plot(X, enrichment_N_to_C_dict_short['G'], color='#59acff', linewidth=2, label=r'3-10-helix short domains')
+    plot[0,1].plot(X, enrichment_N_to_C_dict_long['G'], color='#ffec59', linewidth=2, label=r'3-10-helix long domains')   
+    plot[0,1].set_xticks(xticks_ar)
+    plot[0,1].set_xticklabels(xticklabels_ar)
+    plot[0,1].set_xticks(xticks_spec, minor=True)
+    plot[0,1].set_xticklabels(xticklabels_spec, minor=True)
+    plot[0,1].tick_params(axis='x', which='minor', length=0)
+    plot[0,1].set_xlabel('Distance, aa')
+    plot[0,1].set_ylabel('Enrichment p(N)/p(C)')  
+    plot[0,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='upper center')
+    
+    plot[1,0].plot(X, enrichment_N_to_C_dict_short['I'], color='#94fff1', linewidth=2, label=r'$\pi$-helix short domains')
+    plot[1,0].plot(X, enrichment_N_to_C_dict_long['I'], color='#ab658c', linewidth=2, label=r'$\pi$-helix long domains')
+    plot[1,0].plot(X, enrichment_N_to_C_dict_short['T'], color='#59acff', linewidth=2, label=r'turn short domains')
+    plot[1,0].plot(X, enrichment_N_to_C_dict_long['T'], color='#ffec59', linewidth=2, label=r'turn long domains')   
+    plot[1,0].set_xticks(xticks_ar)
+    plot[1,0].set_xticklabels(xticklabels_ar)
+    plot[1,0].set_xticks(xticks_spec, minor=True)
+    plot[1,0].set_xticklabels(xticklabels_spec, minor=True)
+    plot[1,0].tick_params(axis='x', which='minor', length=0)
+    plot[1,0].set_xlabel('Distance, aa')
+    plot[1,0].set_ylabel('Enrichment p(N)/p(C)')  
+    plot[1,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='upper center')
+    
+    plot[1,1].plot(X, enrichment_N_to_C_dict_short['S'], color='#94fff1', linewidth=2, label=r'bend short domains')
+    plot[1,1].plot(X, enrichment_N_to_C_dict_long['S'], color='#ab658c', linewidth=2, label=r'bend long domains') 
+    plot[1,1].plot(X, enrichment_N_to_C_dict_short['-'], color='#59acff', linewidth=2, label=r'unstructured short domains')
+    plot[1,1].plot(X, enrichment_N_to_C_dict_long['-'], color='#ffec59', linewidth=2, label=r'unstructured long domains')  
+    plot[1,1].set_xticks(xticks_ar)
+    plot[1,1].set_xticklabels(xticklabels_ar)
+    plot[1,1].set_xticks(xticks_spec, minor=True)
+    plot[1,1].set_xticklabels(xticklabels_spec, minor=True)
+    plot[1,1].tick_params(axis='x', which='minor', length=0)
+    plot[1,1].set_xlabel('Distance, aa')
+    plot[1,1].set_ylabel('Enrichment p(N)/p(C)')  
+    plot[1,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='upper center')    
+    
+    
+    plt.tight_layout()
+    plt.show()        
+    
+    return
+
+#######
+#Plot co-occurence of ss elements at termini.
+#######
+
+def plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width):
+    
+    fig, plot=plt.subplots(2,2,figsize=(7,7), dpi=100)
+    ticks_ar=list(range(-1, local_window_width, int(local_window_width/10)))
+    ticks_ar[0]=0
+    print(list(ticks_ar))
+    ticklabels_ar=np.array(list(ticks_ar))+1
+    plot00=plot[0,0].imshow(Obs_over_exp_matrices_short['H'], cmap='hot', interpolation='nearest')
+    plot[0,0].set_title(r'$\alpha$-helix short domains')
+    plo00_cbar=plot[0,0].figure.colorbar(plot00, ax=plot[0,0], shrink=0.7)
+    plot[0,0].set_xticks(ticks_ar)
+    plot[0,0].set_xticklabels(ticklabels_ar) 
+    plot[0,0].set_yticks(ticks_ar)
+    plot[0,0].set_yticklabels(ticklabels_ar)    
+    plot[0,0].set_xlabel('Distance from C-terminus, aa')
+    plot[0,0].set_ylabel('Distance from N-terminus, aa')     
+    plo00_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
+    
+    plot01=plot[0,1].imshow(Obs_over_exp_matrices_long['H'], cmap='hot', interpolation='nearest')
+    plot[0,1].set_title(r'$\alpha$-helix long domains')
+    plo01_cbar=plot[0,1].figure.colorbar(plot01, ax=plot[0,1], shrink=0.7)  
+    plot[0,1].set_xticks(ticks_ar)
+    plot[0,1].set_xticklabels(ticklabels_ar) 
+    plot[0,1].set_yticks(ticks_ar)
+    plot[0,1].set_yticklabels(ticklabels_ar)    
+    plot[0,1].set_xlabel('Distance from C-terminus, aa')
+    plot[0,1].set_ylabel('Distance from N-terminus, aa')     
+    plo01_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
+    
+    plot10=plot[1,0].imshow(Obs_over_exp_matrices_short['E'], cmap='hot', interpolation='nearest')
+    plot[1,0].set_title(r'$\beta$-strand short domains')
+    plo10_cbar=plot[0,0].figure.colorbar(plot10, ax=plot[1,0], shrink=0.7)
+    plot[1,0].set_xticks(ticks_ar)
+    plot[1,0].set_xticklabels(ticklabels_ar) 
+    plot[1,0].set_yticks(ticks_ar)
+    plot[1,0].set_yticklabels(ticklabels_ar)    
+    plot[1,0].set_xlabel('Distance from C-terminus, aa')
+    plot[1,0].set_ylabel('Distance from N-terminus, aa')     
+    plo10_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
+    
+    plot11=plot[1,1].imshow(Obs_over_exp_matrices_long['E'], cmap='hot', interpolation='nearest')
+    plot[1,1].set_title(r'$\beta$-strand long domains')
+    plo11_cbar=plot[1,1].figure.colorbar(plot11, ax=plot[1,1], shrink=0.7)  
+    plot[1,1].set_xticks(ticks_ar)
+    plot[1,1].set_xticklabels(ticklabels_ar) 
+    plot[1,1].set_yticks(ticks_ar)
+    plot[1,1].set_yticklabels(ticklabels_ar)    
+    plot[1,1].set_xlabel('Distance from C-terminus, aa')
+    plot[1,1].set_ylabel('Distance from N-terminus, aa')     
+    plo11_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")    
+    
+    plt.tight_layout()
+    plt.show()    
+    return
+    
+    
 
 
 #######
@@ -232,17 +440,32 @@ def wrapper(DSSP_inpath):
     
     #Define distance from termini to analyse.
     window_width=50
+    local_window_width=50
     
     #Read DSSP data.
     DSSP_data_dict=read_dssp_data(DSSP_inpath)
     #Classify domains by length.
     Short_structures, Long_structures=define_length_groups(DSSP_data_dict, min_len, thr_len)
     #Compute position frequency matrices.
-    ss_pfm_N_short, ss_pfm_C_short=ss_element_frequency_matrix(Short_structures, window_width)
-    ss_pfm_N_long, ss_pfm_C_long=ss_element_frequency_matrix(Long_structures, window_width)
+    ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short=ss_element_frequency_matrix(Short_structures, window_width)
+    ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long=ss_element_frequency_matrix(Long_structures, window_width)
     
     #Plot frequency of ss elements as a function of a distance from termini.
     N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_long, window_width)
+    
+    #Enrichment of ss elements N- over C-terminus.
+    enrichment_N_to_C_dict_short=ss_ele_enrichment(ss_pfm_N_short, ss_pfm_C_short)
+    enrichment_N_to_C_dict_long=ss_ele_enrichment(ss_pfm_N_long, ss_pfm_C_long)
+    
+    #Plot enrichment of frequency of ss elements at N-terminus over C-terminus.
+    N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
+    
+    #Analyse co-occurence of secondary structure elements at protein termini.
+    Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
+    Obs_over_exp_matrices_long=termini_dependance(ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, local_window_width)
+    
+    #Plot co-occurence of secondary structure elements at protein termini.
+    plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width)
     
     return
 
