@@ -12,6 +12,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats as st
+from sklearn.datasets.samples_generator import make_blobs
 
 #######
 #Variables to be defined.
@@ -44,8 +46,8 @@ def read_dssp_data(DSSP_inpath):
             End=int(line[4])
             Resolution=float(line[5])
             SSE_string=line[6]
-            Phi_list=list(line[7])
-            Psi_list=list(line[8])
+            Phi_list=[float(x) for x in line[7].lstrip('[').rstrip(']').split(', ')]
+            Psi_list=[float(x) for x in line[8].lstrip('[').rstrip(']').split(', ')]
             DSSP_data_dict[PFAM_id]=[PDB_id, Chain_id, Start, End, Resolution, SSE_string, Phi_list, Psi_list]
     
     filein.close()
@@ -92,6 +94,31 @@ def define_length_groups(DSSP_data_dict, min_len, thr_len):
     plt.show()
     
     return Short_structures, Long_structures
+
+
+#######
+#Take phi, psi angles for N- and C-termini.
+#######
+
+def phi_psi_N_to_C(structures_dict, window_width):
+        
+    phi_N=[]
+    phi_C=[]
+    psi_N=[]
+    psi_C=[] 
+    phi=[]
+    psi=[]
+    for pfam_id, dssp_data in structures_dict.items():
+        phi_list=dssp_data[6]
+        psi_list=dssp_data[7]
+        phi_N+=phi_list[:window_width]
+        phi_C+=phi_list[-window_width:]
+        psi_N+=psi_list[:window_width]
+        psi_C+=psi_list[-window_width:] 
+        phi+=phi_list
+        psi+=psi_list
+        
+    return phi_N, phi_C, psi_N, psi_C, phi, psi
 
 
 #######
@@ -159,49 +186,51 @@ def termini_dependance(ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C, local_windo
     
     #Calculate observed frequences of elements co-occurence coordinate-wise.
     Observed_matrices_dict={}
-    for letter_code in DSSP_alphabet:
-        Ni_Cj_freq_2d_ar=[]
-        for Ni in range(local_window_width):
-            Cj_freq_1d_ar=[]
-            for Cj in range(local_window_width):
-                N_column_i=ss_matrix_N[Ni]
-                C_column_j=ss_matrix_C[-Cj-1]
-                Ni_Cj_counts=0
-                for structure_k in range(len(N_column_i)):
-                    if (N_column_i[structure_k]==letter_code) and (C_column_j[structure_k]==letter_code):
-                        Ni_Cj_counts+=1
-                Ni_Cj_frequency=Ni_Cj_counts/float(len(N_column_i))
-                Cj_freq_1d_ar.append(Ni_Cj_frequency)
-        
-            Ni_Cj_freq_2d_ar.append(Cj_freq_1d_ar)
-        
-        Ni_Cj_freq_2d_ar_np=np.array(Ni_Cj_freq_2d_ar)
-        Observed_matrices_dict[letter_code]=Ni_Cj_freq_2d_ar_np
+    for letter_code_1 in DSSP_alphabet:
+        for letter_code_2 in DSSP_alphabet:
+            Ni_Cj_freq_2d_ar=[]
+            for Ni in range(local_window_width):
+                Cj_freq_1d_ar=[]
+                for Cj in range(local_window_width):
+                    N_column_i=ss_matrix_N[Ni]
+                    C_column_j=ss_matrix_C[-Cj-1]
+                    Ni_Cj_counts=0
+                    for structure_k in range(len(N_column_i)):
+                        if (N_column_i[structure_k]==letter_code_1) and (C_column_j[structure_k]==letter_code_2):
+                            Ni_Cj_counts+=1
+                    Ni_Cj_frequency=Ni_Cj_counts/float(len(N_column_i))
+                    Cj_freq_1d_ar.append(Ni_Cj_frequency)
+            
+                Ni_Cj_freq_2d_ar.append(Cj_freq_1d_ar)
+            
+            Ni_Cj_freq_2d_ar_np=np.array(Ni_Cj_freq_2d_ar)
+            Observed_matrices_dict[letter_code_1+letter_code_2]=Ni_Cj_freq_2d_ar_np
         
     #Calculate expected frequences of elements co-occurence coordinate-wise.
     Expected_matrices_dict={}
-    for letter_code in DSSP_alphabet:
-        Expected_Ni_Cj_freq_2d_ar=[]
-        for Ni in range(local_window_width):
-            Expected_Cj_freq_1d_ar=[]
-            for Cj in range(local_window_width):  
-                Ni_frequency=ss_pfm_N[letter_code][Ni]
-                Cj_frequency=ss_pfm_C[letter_code][-Cj-1]
-                Expected_Ni_Cj_frequency=Ni_frequency*Cj_frequency
-                Expected_Cj_freq_1d_ar.append(Expected_Ni_Cj_frequency)
-            Expected_Ni_Cj_freq_2d_ar.append(Expected_Cj_freq_1d_ar)
-            
-        Expected_Ni_Cj_freq_2d_ar_np=np.array(Expected_Ni_Cj_freq_2d_ar)
-        Expected_matrices_dict[letter_code]=Expected_Ni_Cj_freq_2d_ar_np
+    for letter_code_1 in DSSP_alphabet:
+        for letter_code_2 in DSSP_alphabet:
+            Expected_Ni_Cj_freq_2d_ar=[]
+            for Ni in range(local_window_width):
+                Expected_Cj_freq_1d_ar=[]
+                for Cj in range(local_window_width):  
+                    Ni_frequency=ss_pfm_N[letter_code_1][Ni]
+                    Cj_frequency=ss_pfm_C[letter_code_2][-Cj-1]
+                    Expected_Ni_Cj_frequency=Ni_frequency*Cj_frequency
+                    Expected_Cj_freq_1d_ar.append(Expected_Ni_Cj_frequency)
+                Expected_Ni_Cj_freq_2d_ar.append(Expected_Cj_freq_1d_ar)
+                
+            Expected_Ni_Cj_freq_2d_ar_np=np.array(Expected_Ni_Cj_freq_2d_ar)
+            Expected_matrices_dict[letter_code_1+letter_code_2]=Expected_Ni_Cj_freq_2d_ar_np
 
     #Calculate observed over expected ratio of frequences of elements co-occurence coordinate-wise.
-    
     Obs_over_exp_matrices_dict={}
-    for letter_code in DSSP_alphabet:
-        Obs_over_exp_freq_matrix=np.divide(Observed_matrices_dict[letter_code], Expected_matrices_dict[letter_code])
-        Obs_over_exp_matrices_dict[letter_code]=Obs_over_exp_freq_matrix
-        
-        print(letter_code, Obs_over_exp_freq_matrix)
+    for letter_code_1 in DSSP_alphabet:
+        for letter_code_2 in DSSP_alphabet:
+            Obs_over_exp_freq_matrix=np.divide(Observed_matrices_dict[letter_code_1+letter_code_2], Expected_matrices_dict[letter_code_1+letter_code_2])
+            Obs_over_exp_matrices_dict[letter_code_1+letter_code_2]=Obs_over_exp_freq_matrix
+            
+            print(letter_code_1, letter_code_2, Obs_over_exp_freq_matrix)
     
     return Obs_over_exp_matrices_dict
 
@@ -378,56 +407,173 @@ def plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, l
     ticks_ar[0]=0
     print(list(ticks_ar))
     ticklabels_ar=np.array(list(ticks_ar))+1
-    plot00=plot[0,0].imshow(Obs_over_exp_matrices_short['H'], cmap='hot', interpolation='nearest')
-    plot[0,0].set_title(r'$\alpha$-helix short domains')
+    plot00=plot[0,0].imshow(Obs_over_exp_matrices_short['EH'], cmap='gnuplot', vmin=0.3, vmax=2.1, interpolation='nearest')
+    plot[0,0].set_title(r'$\beta-\alpha$ short domains')
     plo00_cbar=plot[0,0].figure.colorbar(plot00, ax=plot[0,0], shrink=0.7)
     plot[0,0].set_xticks(ticks_ar)
     plot[0,0].set_xticklabels(ticklabels_ar) 
     plot[0,0].set_yticks(ticks_ar)
     plot[0,0].set_yticklabels(ticklabels_ar)    
-    plot[0,0].set_xlabel('Distance from C-terminus, aa')
-    plot[0,0].set_ylabel('Distance from N-terminus, aa')     
+    plot[0,0].set_xlabel(r'Distance from C-terminus, aa ($\alpha$)')
+    plot[0,0].set_ylabel(r'Distance from N-terminus, aa ($\beta$)')     
     plo00_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
     
-    plot01=plot[0,1].imshow(Obs_over_exp_matrices_long['H'], cmap='hot', interpolation='nearest')
-    plot[0,1].set_title(r'$\alpha$-helix long domains')
+    plot01=plot[0,1].imshow(Obs_over_exp_matrices_long['EH'], cmap='gnuplot', vmin=0.3, vmax=2.1, interpolation='nearest')
+    plot[0,1].set_title(r'$\beta-\alpha$-helix long domains')
     plo01_cbar=plot[0,1].figure.colorbar(plot01, ax=plot[0,1], shrink=0.7)  
     plot[0,1].set_xticks(ticks_ar)
     plot[0,1].set_xticklabels(ticklabels_ar) 
     plot[0,1].set_yticks(ticks_ar)
     plot[0,1].set_yticklabels(ticklabels_ar)    
-    plot[0,1].set_xlabel('Distance from C-terminus, aa')
-    plot[0,1].set_ylabel('Distance from N-terminus, aa')     
+    plot[0,1].set_xlabel(r'Distance from C-terminus, aa ($\alpha$)')
+    plot[0,1].set_ylabel(r'Distance from N-terminus, aa ($\beta$)')     
     plo01_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
     
-    plot10=plot[1,0].imshow(Obs_over_exp_matrices_short['E'], cmap='hot', interpolation='nearest')
-    plot[1,0].set_title(r'$\beta$-strand short domains')
+    plot10=plot[1,0].imshow(Obs_over_exp_matrices_short['HE'], cmap='gnuplot', vmin=0.3, vmax=2.1, interpolation='nearest')
+    plot[1,0].set_title(r'$\alpha-\beta$-strand short domains')
     plo10_cbar=plot[0,0].figure.colorbar(plot10, ax=plot[1,0], shrink=0.7)
     plot[1,0].set_xticks(ticks_ar)
     plot[1,0].set_xticklabels(ticklabels_ar) 
     plot[1,0].set_yticks(ticks_ar)
     plot[1,0].set_yticklabels(ticklabels_ar)    
-    plot[1,0].set_xlabel('Distance from C-terminus, aa')
-    plot[1,0].set_ylabel('Distance from N-terminus, aa')     
+    plot[1,0].set_xlabel(r'Distance from C-terminus, aa ($\beta$)')
+    plot[1,0].set_ylabel(r'Distance from N-terminus, aa ($\alpha$)')     
     plo10_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")
     
-    plot11=plot[1,1].imshow(Obs_over_exp_matrices_long['E'], cmap='hot', interpolation='nearest')
-    plot[1,1].set_title(r'$\beta$-strand long domains')
+    plot11=plot[1,1].imshow(Obs_over_exp_matrices_long['HE'], cmap='gnuplot', vmin=0.3, vmax=2.1, interpolation='nearest')
+    plot[1,1].set_title(r'$\alpha-\beta$-strand long domains')
     plo11_cbar=plot[1,1].figure.colorbar(plot11, ax=plot[1,1], shrink=0.7)  
     plot[1,1].set_xticks(ticks_ar)
     plot[1,1].set_xticklabels(ticklabels_ar) 
     plot[1,1].set_yticks(ticks_ar)
     plot[1,1].set_yticklabels(ticklabels_ar)    
-    plot[1,1].set_xlabel('Distance from C-terminus, aa')
-    plot[1,1].set_ylabel('Distance from N-terminus, aa')     
+    plot[1,1].set_xlabel(r'Distance from C-terminus, aa ($\beta$)')
+    plot[1,1].set_ylabel(r'Distance from N-terminus, aa ($\alpha$)')     
     plo11_cbar.ax.set_ylabel('p(Obs)/p(Exp)', rotation=-90, va="bottom")    
     
     plt.tight_layout()
     plt.show()    
     return
-    
-    
 
+
+#######
+#Create Ramachandran plots.
+#######
+
+def plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi):
+    
+    fig, plot=plt.subplots(2,3,figsize=(11,7), dpi=100)
+    ticks_ar=list(range(-180, 181, 60))
+    ticklabels_ar=ticks_ar
+    plot[0,0].scatter(sphi_N, spsi_N, s=0.01, c='black')
+    plot[0,0].set_title(r'Short domains, N-terminus')
+    plot[0,0].set_xticks(ticks_ar)
+    plot[0,0].set_xticklabels(ticklabels_ar) 
+    plot[0,0].set_yticks(ticks_ar)
+    plot[0,0].set_yticklabels(ticklabels_ar)    
+    plot[0,0].set_xlabel(r'$\phi$')
+    plot[0,0].set_ylabel(r'$\psi$')   
+    plot[0,0].set_xlim([-180, 180])
+    plot[0,0].set_ylim([-180, 180])
+    
+    plot[0,1].scatter(sphi_C, spsi_C, s=0.01, c='black')
+    plot[0,1].set_title(r'Short domains, C-terminus')
+    plot[0,1].set_xticks(ticks_ar)
+    plot[0,1].set_xticklabels(ticklabels_ar) 
+    plot[0,1].set_yticks(ticks_ar)
+    plot[0,1].set_yticklabels(ticklabels_ar)    
+    plot[0,1].set_xlabel(r'$\phi$')
+    plot[0,1].set_ylabel(r'$\psi$')
+    plot[0,1].set_xlim([-180, 180])
+    plot[0,1].set_ylim([-180, 180])    
+    
+    plot[0,2].scatter(sphi, spsi, s=0.01, c='black')
+    plot[0,2].set_title(r'Short domains, all')
+    plot[0,2].set_xticks(ticks_ar)
+    plot[0,2].set_xticklabels(ticklabels_ar) 
+    plot[0,2].set_yticks(ticks_ar)
+    plot[0,2].set_yticklabels(ticklabels_ar)    
+    plot[0,2].set_xlabel(r'$\phi$')
+    plot[0,2].set_ylabel(r'$\psi$') 
+    plot[0,2].set_xlim([-180, 180])
+    plot[0,2].set_ylim([-180, 180])    
+    
+    plot[1,0].scatter(lphi_N, lpsi_N, s=0.01, c='black')
+    plot[1,0].set_title(r'Long domains, N-terminus')
+    plot[1,0].set_xticks(ticks_ar)
+    plot[1,0].set_xticklabels(ticklabels_ar) 
+    plot[1,0].set_yticks(ticks_ar)
+    plot[1,0].set_yticklabels(ticklabels_ar)    
+    plot[1,0].set_xlabel(r'$\phi$')
+    plot[1,0].set_ylabel(r'$\psi$')   
+    plot[1,0].set_xlim([-180, 180])
+    plot[1,0].set_ylim([-180, 180])    
+    
+    plot[1,1].scatter(lphi_C, lpsi_C, s=0.01, c='black')
+    plot[1,1].set_title(r'Long domains, C-terminus')
+    plot[1,1].set_xticks(ticks_ar)
+    plot[1,1].set_xticklabels(ticklabels_ar) 
+    plot[1,1].set_yticks(ticks_ar)
+    plot[1,1].set_yticklabels(ticklabels_ar)    
+    plot[1,1].set_xlabel(r'$\phi$')
+    plot[1,1].set_ylabel(r'$\psi$') 
+    plot[1,1].set_xlim([-180, 180])
+    plot[1,1].set_ylim([-180, 180])    
+    
+    plot[1,2].scatter(lphi, lpsi, s=0.01, c='black')
+    plot[1,2].set_title(r'Long domains, all')
+    plot[1,2].set_xticks(ticks_ar)
+    plot[1,2].set_xticklabels(ticklabels_ar) 
+    plot[1,2].set_yticks(ticks_ar)
+    plot[1,2].set_yticklabels(ticklabels_ar)    
+    plot[1,2].set_xlabel(r'$\phi$')
+    plot[1,2].set_ylabel(r'$\psi$')   
+    plot[1,2].set_xlim([-180, 180])
+    plot[1,2].set_ylim([-180, 180])    
+    
+    plt.tight_layout()
+    plt.show()    
+    return
+
+
+#######
+#Create Ramachandran plots using KDE.
+#######
+
+def plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi):
+    
+    #Define the borders. Taken from https://towardsdatascience.com/simple-example-of-2d-density-plots-in-python-83b83b934f67
+    deltaX=(180+180)/36
+    deltaY=(180+180)/36
+    xmin=-180-deltaX
+    xmax=180+deltaX
+    ymin=-180-deltaY
+    ymax=180+deltaY
+    print(xmin, xmax, ymin, ymax)   #Create meshgrid
+    xx, yy = np.mgrid[xmin:xmax:360j, ymin:ymax:360j] 
+    
+    positions=np.vstack([xx.ravel(), yy.ravel()])
+    values=np.vstack([sphi_N, spsi_N])
+    kernel=st.gaussian_kde(values)
+    f=np.reshape(kernel(positions).T, xx.shape)  
+    
+    fig=plt.figure(figsize=(8,8))
+    ax=fig.gca()
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    cfset=ax.contourf(xx, yy, f, cmap='coolwarm')
+    ax.imshow(np.rot90(f), cmap='coolwarm', extent=[xmin, xmax, ymin, ymax])
+    cset=ax.contour(xx, yy, f, colors='k')
+    ax.clabel(cset, inline=1, fontsize=10)
+    ax.set_xlabel(r'$\phi$')
+    ax.set_ylabel(r'$\psi$')
+    #plt.title('2D Gaussian Kernel density estimation')    
+    
+    plt.tight_layout()
+    plt.show() 
+    
+    return
+    
 
 #######
 #Wrapper function.
@@ -446,6 +592,15 @@ def wrapper(DSSP_inpath):
     DSSP_data_dict=read_dssp_data(DSSP_inpath)
     #Classify domains by length.
     Short_structures, Long_structures=define_length_groups(DSSP_data_dict, min_len, thr_len)
+    
+    #Get phi, psi angles for N- and C-termini.
+    sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi=phi_psi_N_to_C(Short_structures, window_width)
+    lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi=phi_psi_N_to_C(Long_structures, window_width)
+    
+    #Create Ramachandran plots.
+    plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    
     #Compute position frequency matrices.
     ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short=ss_element_frequency_matrix(Short_structures, window_width)
     ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long=ss_element_frequency_matrix(Long_structures, window_width)
@@ -458,14 +613,14 @@ def wrapper(DSSP_inpath):
     enrichment_N_to_C_dict_long=ss_ele_enrichment(ss_pfm_N_long, ss_pfm_C_long)
     
     #Plot enrichment of frequency of ss elements at N-terminus over C-terminus.
-    N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
+    ##N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
     
     #Analyse co-occurence of secondary structure elements at protein termini.
-    Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
-    Obs_over_exp_matrices_long=termini_dependance(ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, local_window_width)
+    ##Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
+    ##Obs_over_exp_matrices_long=termini_dependance(ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, local_window_width)
     
     #Plot co-occurence of secondary structure elements at protein termini.
-    plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width)
+    ##plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width)
     
     return
 
