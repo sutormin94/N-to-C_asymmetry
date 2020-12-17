@@ -144,20 +144,45 @@ def ss_element_frequency_matrix(structures_dict, window_width):
     DSSP_alphabet=['H', 'B', 'E', 'G', 'I', 'T', 'S', '-']
     ss_pfm_N={}
     ss_pfm_C={}
+    ss_pfm_conf_N={}
+    ss_pfm_conf_C={}
     for letter_code in DSSP_alphabet:
+        #Keep frequences of ss elements.
         frequency_row_N=[]
         frequency_row_C=[]
+        #Keep boundaries of confident interval.
+        conf_upper_N=[]
+        conf_upper_C=[]
+        conf_lower_N=[]
+        conf_lower_C=[]        
         for i in range(len(ss_matrix_N)):
             column_letter_freq_N=ss_matrix_N[i].count(letter_code)/float(len(ss_matrix_N[i]))
+            confident_interval_N=st.binom.interval(0.95, len(ss_matrix_N[i]), column_letter_freq_N, loc=0)
+            lower_N=confident_interval_N[0]/len(ss_matrix_N[i])
+            upper_N=confident_interval_N[1]/len(ss_matrix_N[i])
+            conf_lower_N.append(lower_N)
+            conf_upper_N.append(upper_N)
             frequency_row_N.append(column_letter_freq_N)
+            
             column_letter_freq_C=ss_matrix_C[i].count(letter_code)/float(len(ss_matrix_C[i]))
-            frequency_row_C.append(column_letter_freq_C)            
+            confident_interval_C=st.binom.interval(0.95, len(ss_matrix_C[i]), column_letter_freq_C, loc=0)
+            lower_C=confident_interval_C[0]/len(ss_matrix_C[i])
+            upper_C=confident_interval_C[1]/len(ss_matrix_C[i])
+            conf_lower_C.append(lower_C)
+            conf_upper_C.append(upper_C)
+            frequency_row_C.append(column_letter_freq_C)  
+          
         ss_pfm_N[letter_code]=frequency_row_N
         ss_pfm_C[letter_code]=frequency_row_C
+        
+        ss_pfm_conf_N[letter_code+'_upper']=conf_upper_N
+        ss_pfm_conf_N[letter_code+'_lower']=conf_lower_N
+        ss_pfm_conf_C[letter_code+'_upper']=conf_upper_C
+        ss_pfm_conf_C[letter_code+'_lower']=conf_lower_C        
        
     print(ss_pfm_N) 
     print(ss_pfm_C)   
-    return ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C
+    return ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C, ss_pfm_conf_N, ss_pfm_conf_C
 
 
 #######
@@ -235,12 +260,34 @@ def termini_dependance(ss_matrix_N, ss_matrix_C, ss_pfm_N, ss_pfm_C, local_windo
     return Obs_over_exp_matrices_dict
 
 
+#######
+#Analyse N-to-C asymmetry in secondary structure elements frequency.
+#######
+
+def distribution_of_frequences(ss_pfm_N, ss_pfm_C):
+    ss_pfm=ss_pfm_N+ss_pfm_C
+    print(len(ss_pfm))
+    
+    fig, plot=plt.subplots(1,1,figsize=(4,4), dpi=100)
+    weights=np.ones_like(ss_pfm)/(len(ss_pfm)) #Taken from https://stackoverflow.com/questions/42481698/probability-density-histogram-with-matplotlib-doesnt-make-sense     
+    plot.hist(ss_pfm, bins=10, weights=weights)
+    plot.set_xlabel('Frequency of ss element')
+    plot.set_ylabel('Fraction of positions')
+    plt.show()
+
+    return
+
 
 #######
 #Analyse N-to-C asymmetry in secondary structure elements frequency.
 #######
 
-def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_long, window_width):
+def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_conf_N_short, ss_pfm_conf_C_short, ss_pfm_N_long, ss_pfm_C_long, ss_pfm_conf_N_long, ss_pfm_conf_C_long, window_width):
+    
+    ##Plot distribution of frequences, get confidential interval.
+    ##Distribution are far from being normal, estimation is not good -> depricated.
+    #distribution_of_frequences(ss_pfm_N_short['H'], ss_pfm_C_short['H'])
+    #distribution_of_frequences(ss_pfm_N_long['H'], ss_pfm_C_long['H'])
     
     #Plot frequency of ss elements as a function of distance from N- and C-termini.
     X_N=range(window_width)
@@ -251,13 +298,25 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     xticklabels_spec=['N-', '-C']
     fig, plot=plt.subplots(2,2,figsize=(12,6), dpi=100)
     plot[0,0].plot(X_N, ss_pfm_N_short['H'], color='#94fff1', linewidth=2, label=r'$\alpha$-helix short domains')
+    plot[0,0].fill_between(X_N, ss_pfm_conf_N_short['H_lower'], ss_pfm_conf_N_short['H_upper'], color='#94fff1', alpha=0.3, linewidth=0)
     plot[0,0].plot(X_C, ss_pfm_C_short['H'], color='#94fff1', linewidth=2)
+    plot[0,0].fill_between(X_C, ss_pfm_conf_C_short['H_lower'], ss_pfm_conf_C_short['H_upper'], color='#94fff1', alpha=0.3, linewidth=0)
+    
     plot[0,0].plot(X_N, ss_pfm_N_long['H'], color='#ab658c', linewidth=2, label=r'$\alpha$-helix long domains')
+    plot[0,0].fill_between(X_N, ss_pfm_conf_N_long['H_lower'], ss_pfm_conf_N_long['H_upper'], color='#ab658c', alpha=0.3, linewidth=0)
     plot[0,0].plot(X_C, ss_pfm_C_long['H'], color='#ab658c', linewidth=2) 
+    plot[0,0].fill_between(X_C, ss_pfm_conf_C_long['H_lower'], ss_pfm_conf_C_long['H_upper'], color='#ab658c', alpha=0.3, linewidth=0)
+    
     plot[0,0].plot(X_N, ss_pfm_N_short['E'], color='#59acff', linewidth=2, label=r'$\beta$-strand short domains')
+    plot[0,0].fill_between(X_N, ss_pfm_conf_N_short['E_lower'], ss_pfm_conf_N_short['E_upper'], color='#59acff', alpha=0.3, linewidth=0)
     plot[0,0].plot(X_C, ss_pfm_C_short['E'], color='#59acff', linewidth=2)
+    plot[0,0].fill_between(X_C, ss_pfm_conf_C_short['E_lower'], ss_pfm_conf_C_short['E_upper'], color='#59acff', alpha=0.3, linewidth=0)
+    
     plot[0,0].plot(X_N, ss_pfm_N_long['E'], color='#ffec59', linewidth=2, label=r'$\beta$-strand long domains')
+    plot[0,0].fill_between(X_N, ss_pfm_conf_N_long['E_lower'], ss_pfm_conf_N_long['E_upper'], color='#ffec59', alpha=0.3, linewidth=0)
     plot[0,0].plot(X_C, ss_pfm_C_long['E'], color='#ffec59', linewidth=2)    
+    plot[0,0].fill_between(X_C, ss_pfm_conf_C_long['E_lower'], ss_pfm_conf_C_long['E_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    
     plot[0,0].set_xticks(xticks_ar)
     plot[0,0].set_xticklabels(xticklabels_ar)
     plot[0,0].set_xticks(xticks_spec, minor=True)
@@ -268,13 +327,25 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[0,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='upper center')
     
     plot[0,1].plot(X_N, ss_pfm_N_short['B'], color='#94fff1', linewidth=2, label=r'$\beta$-bridge short domains')
+    plot[0,1].fill_between(X_N, ss_pfm_conf_N_short['B_lower'], ss_pfm_conf_N_short['B_upper'], color='#94fff1', alpha=0.3, linewidth=0)
     plot[0,1].plot(X_C, ss_pfm_C_short['B'], color='#94fff1', linewidth=2)
+    plot[0,1].fill_between(X_C, ss_pfm_conf_C_short['B_lower'], ss_pfm_conf_C_short['B_upper'], color='#94fff1', alpha=0.3, linewidth=0)
+    
     plot[0,1].plot(X_N, ss_pfm_N_long['B'], color='#ab658c', linewidth=2, label=r'$\beta$-bridge long domains')
+    plot[0,1].fill_between(X_N, ss_pfm_conf_N_long['B_lower'], ss_pfm_conf_N_long['B_upper'], color='#ab658c', alpha=0.3, linewidth=0)
     plot[0,1].plot(X_C, ss_pfm_C_long['B'], color='#ab658c', linewidth=2) 
+    plot[0,1].fill_between(X_C, ss_pfm_conf_C_long['B_lower'], ss_pfm_conf_C_long['B_upper'], color='#ab658c', alpha=0.3, linewidth=0)
+    
     plot[0,1].plot(X_N, ss_pfm_N_short['G'], color='#59acff', linewidth=2, label=r'3-10-helix short domains')
+    plot[0,1].fill_between(X_N, ss_pfm_conf_N_short['G_lower'], ss_pfm_conf_N_short['G_upper'], color='#59acff', alpha=0.3, linewidth=0)
     plot[0,1].plot(X_C, ss_pfm_C_short['G'], color='#59acff', linewidth=2)
+    plot[0,1].fill_between(X_C, ss_pfm_conf_C_short['G_lower'], ss_pfm_conf_C_short['G_upper'], color='#59acff', alpha=0.3, linewidth=0)
+    
     plot[0,1].plot(X_N, ss_pfm_N_long['G'], color='#ffec59', linewidth=2, label=r'3-10-helix long domains')
+    plot[0,1].fill_between(X_N, ss_pfm_conf_N_long['G_lower'], ss_pfm_conf_N_long['G_upper'], color='#ffec59', alpha=0.3, linewidth=0)
     plot[0,1].plot(X_C, ss_pfm_C_long['G'], color='#ffec59', linewidth=2)    
+    plot[0,1].fill_between(X_C, ss_pfm_conf_C_long['G_lower'], ss_pfm_conf_C_long['G_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    
     plot[0,1].set_xticks(xticks_ar)
     plot[0,1].set_xticklabels(xticklabels_ar)
     plot[0,1].set_xticks(xticks_spec, minor=True)
@@ -285,13 +356,25 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[0,1].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center')
     
     plot[1,0].plot(X_N, ss_pfm_N_short['I'], color='#94fff1', linewidth=2, label=r'$\pi$-helix short domains')
+    plot[1,0].fill_between(X_N, ss_pfm_conf_N_short['I_lower'], ss_pfm_conf_N_short['I_upper'], color='#94fff1', alpha=0.3, linewidth=0)
     plot[1,0].plot(X_C, ss_pfm_C_short['I'], color='#94fff1', linewidth=2)
+    plot[1,0].fill_between(X_C, ss_pfm_conf_C_short['I_lower'], ss_pfm_conf_C_short['I_upper'], color='#94fff1', alpha=0.3, linewidth=0)
+
     plot[1,0].plot(X_N, ss_pfm_N_long['I'], color='#ab658c', linewidth=2, label=r'$\pi$-helix long domains')
+    plot[1,0].fill_between(X_N, ss_pfm_conf_N_long['I_lower'], ss_pfm_conf_N_long['I_upper'], color='#ab658c', alpha=0.3, linewidth=0)
     plot[1,0].plot(X_C, ss_pfm_C_long['I'], color='#ab658c', linewidth=2) 
+    plot[1,0].fill_between(X_C, ss_pfm_conf_C_long['I_lower'], ss_pfm_conf_C_long['I_upper'], color='#ab658c', alpha=0.3, linewidth=0)
+
     plot[1,0].plot(X_N, ss_pfm_N_short['T'], color='#59acff', linewidth=2, label=r'turn short domains')
+    plot[1,0].fill_between(X_N, ss_pfm_conf_N_short['T_lower'], ss_pfm_conf_N_short['T_upper'], color='#59acff', alpha=0.3, linewidth=0)
     plot[1,0].plot(X_C, ss_pfm_C_short['T'], color='#59acff', linewidth=2)
+    plot[1,0].fill_between(X_C, ss_pfm_conf_C_short['T_lower'], ss_pfm_conf_C_short['T_upper'], color='#59acff', alpha=0.3, linewidth=0)
+
     plot[1,0].plot(X_N, ss_pfm_N_long['T'], color='#ffec59', linewidth=2, label=r'turn long domains')
-    plot[1,0].plot(X_C, ss_pfm_C_long['T'], color='#ffec59', linewidth=2)    
+    plot[1,0].fill_between(X_N, ss_pfm_conf_N_long['T_lower'], ss_pfm_conf_N_long['T_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    plot[1,0].plot(X_C, ss_pfm_C_long['T'], color='#ffec59', linewidth=2)  
+    plot[1,0].fill_between(X_C, ss_pfm_conf_C_long['T_lower'], ss_pfm_conf_C_long['T_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    
     plot[1,0].set_xticks(xticks_ar)
     plot[1,0].set_xticklabels(xticklabels_ar)
     plot[1,0].set_xticks(xticks_spec, minor=True)
@@ -302,13 +385,25 @@ def N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_lon
     plot[1,0].legend(fontsize=8.5, ncol=2, handlelength=0.7, frameon=False, columnspacing=0.7, loc='center')
     
     plot[1,1].plot(X_N, ss_pfm_N_short['S'], color='#94fff1', linewidth=2, label=r'bend short domains')
+    plot[1,1].fill_between(X_N, ss_pfm_conf_N_short['S_lower'], ss_pfm_conf_N_short['S_upper'], color='#94fff1', alpha=0.3, linewidth=0)
     plot[1,1].plot(X_C, ss_pfm_C_short['S'], color='#94fff1', linewidth=2)
+    plot[1,1].fill_between(X_C, ss_pfm_conf_C_short['S_lower'], ss_pfm_conf_C_short['S_upper'], color='#94fff1', alpha=0.3, linewidth=0)
+    
     plot[1,1].plot(X_N, ss_pfm_N_long['S'], color='#ab658c', linewidth=2, label=r'bend long domains')
+    plot[1,1].fill_between(X_N, ss_pfm_conf_N_long['S_lower'], ss_pfm_conf_N_long['S_upper'], color='#ab658c', alpha=0.3, linewidth=0)
     plot[1,1].plot(X_C, ss_pfm_C_long['S'], color='#ab658c', linewidth=2) 
+    plot[1,1].fill_between(X_C, ss_pfm_conf_C_long['S_lower'], ss_pfm_conf_C_long['S_upper'], color='#ab658c', alpha=0.3, linewidth=0)
+    
     plot[1,1].plot(X_N, ss_pfm_N_short['-'], color='#59acff', linewidth=2, label=r'unstructured short domains')
+    plot[1,1].fill_between(X_N, ss_pfm_conf_N_short['-_lower'], ss_pfm_conf_N_short['-_upper'], color='#59acff', alpha=0.3, linewidth=0)
     plot[1,1].plot(X_C, ss_pfm_C_short['-'], color='#59acff', linewidth=2)
+    plot[1,1].fill_between(X_C, ss_pfm_conf_C_short['-_lower'], ss_pfm_conf_C_short['-_upper'], color='#59acff', alpha=0.3, linewidth=0)
+        
     plot[1,1].plot(X_N, ss_pfm_N_long['-'], color='#ffec59', linewidth=2, label=r'unstructured long domains')
-    plot[1,1].plot(X_C, ss_pfm_C_long['-'], color='#ffec59', linewidth=2)    
+    plot[1,1].fill_between(X_N, ss_pfm_conf_N_long['-_lower'], ss_pfm_conf_N_long['-_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    plot[1,1].plot(X_C, ss_pfm_C_long['-'], color='#ffec59', linewidth=2)  
+    plot[1,1].fill_between(X_C, ss_pfm_conf_C_long['-_lower'], ss_pfm_conf_C_long['-_upper'], color='#ffec59', alpha=0.3, linewidth=0)
+    
     plot[1,1].set_xticks(xticks_ar)
     plot[1,1].set_xticklabels(xticklabels_ar)
     plot[1,1].set_xticks(xticks_spec, minor=True)
@@ -598,22 +693,22 @@ def wrapper(DSSP_inpath):
     lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi=phi_psi_N_to_C(Long_structures, window_width)
     
     #Create Ramachandran plots.
-    plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
-    plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    ##plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    ##plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
     
     #Compute position frequency matrices.
-    ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short=ss_element_frequency_matrix(Short_structures, window_width)
-    ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long=ss_element_frequency_matrix(Long_structures, window_width)
+    ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, ss_pfm_conf_N_short, ss_pfm_conf_C_short=ss_element_frequency_matrix(Short_structures, window_width)
+    ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, ss_pfm_conf_N_long, ss_pfm_conf_C_long=ss_element_frequency_matrix(Long_structures, window_width)
     
     #Plot frequency of ss elements as a function of a distance from termini.
-    N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_N_long, ss_pfm_C_long, window_width)
+    N_to_C_asymmetry(ss_pfm_N_short, ss_pfm_C_short, ss_pfm_conf_N_short, ss_pfm_conf_C_short, ss_pfm_N_long, ss_pfm_C_long, ss_pfm_conf_N_long, ss_pfm_conf_C_long, window_width)
     
     #Enrichment of ss elements N- over C-terminus.
     enrichment_N_to_C_dict_short=ss_ele_enrichment(ss_pfm_N_short, ss_pfm_C_short)
     enrichment_N_to_C_dict_long=ss_ele_enrichment(ss_pfm_N_long, ss_pfm_C_long)
     
     #Plot enrichment of frequency of ss elements at N-terminus over C-terminus.
-    ##N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
+    N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
     
     #Analyse co-occurence of secondary structure elements at protein termini.
     ##Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
