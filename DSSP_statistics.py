@@ -3,7 +3,7 @@
 ##N-to-C-terminus assymetry in protein domain secondary structure elements composition##
 
 #Pareses DSSP output generated for representative structures with Run_DSSP.py
-#
+#Get statistics of secondary structure elements at N- and C-termini of protein domains.
 ###############################################
 
 #######
@@ -13,7 +13,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as st
-from sklearn.datasets.samples_generator import make_blobs
 
 #######
 #Variables to be defined.
@@ -549,125 +548,6 @@ def plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, l
     plt.tight_layout()
     plt.show()    
     return
-
-
-#######
-#Create Ramachandran plots.
-#######
-
-def plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi):
-    
-    fig, plot=plt.subplots(2,3,figsize=(11,7), dpi=100)
-    ticks_ar=list(range(-180, 181, 60))
-    ticklabels_ar=ticks_ar
-    plot[0,0].scatter(sphi_N, spsi_N, s=0.01, c='black')
-    plot[0,0].set_title(r'Short domains, N-terminus')
-    plot[0,0].set_xticks(ticks_ar)
-    plot[0,0].set_xticklabels(ticklabels_ar) 
-    plot[0,0].set_yticks(ticks_ar)
-    plot[0,0].set_yticklabels(ticklabels_ar)    
-    plot[0,0].set_xlabel(r'$\phi$')
-    plot[0,0].set_ylabel(r'$\psi$')   
-    plot[0,0].set_xlim([-180, 180])
-    plot[0,0].set_ylim([-180, 180])
-    
-    plot[0,1].scatter(sphi_C, spsi_C, s=0.01, c='black')
-    plot[0,1].set_title(r'Short domains, C-terminus')
-    plot[0,1].set_xticks(ticks_ar)
-    plot[0,1].set_xticklabels(ticklabels_ar) 
-    plot[0,1].set_yticks(ticks_ar)
-    plot[0,1].set_yticklabels(ticklabels_ar)    
-    plot[0,1].set_xlabel(r'$\phi$')
-    plot[0,1].set_ylabel(r'$\psi$')
-    plot[0,1].set_xlim([-180, 180])
-    plot[0,1].set_ylim([-180, 180])    
-    
-    plot[0,2].scatter(sphi, spsi, s=0.01, c='black')
-    plot[0,2].set_title(r'Short domains, all')
-    plot[0,2].set_xticks(ticks_ar)
-    plot[0,2].set_xticklabels(ticklabels_ar) 
-    plot[0,2].set_yticks(ticks_ar)
-    plot[0,2].set_yticklabels(ticklabels_ar)    
-    plot[0,2].set_xlabel(r'$\phi$')
-    plot[0,2].set_ylabel(r'$\psi$') 
-    plot[0,2].set_xlim([-180, 180])
-    plot[0,2].set_ylim([-180, 180])    
-    
-    plot[1,0].scatter(lphi_N, lpsi_N, s=0.01, c='black')
-    plot[1,0].set_title(r'Long domains, N-terminus')
-    plot[1,0].set_xticks(ticks_ar)
-    plot[1,0].set_xticklabels(ticklabels_ar) 
-    plot[1,0].set_yticks(ticks_ar)
-    plot[1,0].set_yticklabels(ticklabels_ar)    
-    plot[1,0].set_xlabel(r'$\phi$')
-    plot[1,0].set_ylabel(r'$\psi$')   
-    plot[1,0].set_xlim([-180, 180])
-    plot[1,0].set_ylim([-180, 180])    
-    
-    plot[1,1].scatter(lphi_C, lpsi_C, s=0.01, c='black')
-    plot[1,1].set_title(r'Long domains, C-terminus')
-    plot[1,1].set_xticks(ticks_ar)
-    plot[1,1].set_xticklabels(ticklabels_ar) 
-    plot[1,1].set_yticks(ticks_ar)
-    plot[1,1].set_yticklabels(ticklabels_ar)    
-    plot[1,1].set_xlabel(r'$\phi$')
-    plot[1,1].set_ylabel(r'$\psi$') 
-    plot[1,1].set_xlim([-180, 180])
-    plot[1,1].set_ylim([-180, 180])    
-    
-    plot[1,2].scatter(lphi, lpsi, s=0.01, c='black')
-    plot[1,2].set_title(r'Long domains, all')
-    plot[1,2].set_xticks(ticks_ar)
-    plot[1,2].set_xticklabels(ticklabels_ar) 
-    plot[1,2].set_yticks(ticks_ar)
-    plot[1,2].set_yticklabels(ticklabels_ar)    
-    plot[1,2].set_xlabel(r'$\phi$')
-    plot[1,2].set_ylabel(r'$\psi$')   
-    plot[1,2].set_xlim([-180, 180])
-    plot[1,2].set_ylim([-180, 180])    
-    
-    plt.tight_layout()
-    plt.show()    
-    return
-
-
-#######
-#Create Ramachandran plots using KDE.
-#######
-
-def plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi):
-    
-    #Define the borders. Taken from https://towardsdatascience.com/simple-example-of-2d-density-plots-in-python-83b83b934f67
-    deltaX=(180+180)/36
-    deltaY=(180+180)/36
-    xmin=-180-deltaX
-    xmax=180+deltaX
-    ymin=-180-deltaY
-    ymax=180+deltaY
-    print(xmin, xmax, ymin, ymax)   #Create meshgrid
-    xx, yy = np.mgrid[xmin:xmax:360j, ymin:ymax:360j] 
-    
-    positions=np.vstack([xx.ravel(), yy.ravel()])
-    values=np.vstack([sphi_N, spsi_N])
-    kernel=st.gaussian_kde(values)
-    f=np.reshape(kernel(positions).T, xx.shape)  
-    
-    fig=plt.figure(figsize=(8,8))
-    ax=fig.gca()
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-    cfset=ax.contourf(xx, yy, f, cmap='coolwarm')
-    ax.imshow(np.rot90(f), cmap='coolwarm', extent=[xmin, xmax, ymin, ymax])
-    cset=ax.contour(xx, yy, f, colors='k')
-    ax.clabel(cset, inline=1, fontsize=10)
-    ax.set_xlabel(r'$\phi$')
-    ax.set_ylabel(r'$\psi$')
-    #plt.title('2D Gaussian Kernel density estimation')    
-    
-    plt.tight_layout()
-    plt.show() 
-    
-    return
     
 
 #######
@@ -692,10 +572,6 @@ def wrapper(DSSP_inpath):
     sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi=phi_psi_N_to_C(Short_structures, window_width)
     lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi=phi_psi_N_to_C(Long_structures, window_width)
     
-    #Create Ramachandran plots.
-    ##plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
-    ##plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
-    
     #Compute position frequency matrices.
     ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, ss_pfm_conf_N_short, ss_pfm_conf_C_short=ss_element_frequency_matrix(Short_structures, window_width)
     ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, ss_pfm_conf_N_long, ss_pfm_conf_C_long=ss_element_frequency_matrix(Long_structures, window_width)
@@ -711,11 +587,11 @@ def wrapper(DSSP_inpath):
     N_to_C_enrichment(enrichment_N_to_C_dict_short, enrichment_N_to_C_dict_long, window_width)
     
     #Analyse co-occurence of secondary structure elements at protein termini.
-    ##Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
-    ##Obs_over_exp_matrices_long=termini_dependance(ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, local_window_width)
+    Obs_over_exp_matrices_short=termini_dependance(ss_matrix_N_short, ss_matrix_C_short, ss_pfm_N_short, ss_pfm_C_short, local_window_width)
+    Obs_over_exp_matrices_long=termini_dependance(ss_matrix_N_long, ss_matrix_C_long, ss_pfm_N_long, ss_pfm_C_long, local_window_width)
     
     #Plot co-occurence of secondary structure elements at protein termini.
-    ##plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width)
+    plot_co_occurence(Obs_over_exp_matrices_short, Obs_over_exp_matrices_long, local_window_width)
     
     return
 
