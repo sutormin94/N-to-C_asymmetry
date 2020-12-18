@@ -286,8 +286,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[0,0].set_yticklabels(ticklabels_ar)
     plot[0,0].set_xlabel(r'$\phi$')
     plot[0,0].set_ylabel(r'$\psi$')
-    plot[0,0].set_xlim([0, dots])
-    plot[0,0].set_ylim([0, dots])
+    plot[0,0].set_xlim([-0.5, dots-0.5])
+    plot[0,0].set_ylim([-0.5, dots-0.5])
 
     plot01=plot[0,1].imshow(np.log(density_Ramachandran(sphi_C, spsi_C, plot_resol)+1), cmap='hot', interpolation='nearest')
     plo01_cbar=plot[0,1].figure.colorbar(plot01, ax=plot[0,1], shrink=0.7)
@@ -298,8 +298,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[0,1].set_yticklabels(ticklabels_ar)
     plot[0,1].set_xlabel(r'$\phi$')
     plot[0,1].set_ylabel(r'$\psi$')
-    plot[0,1].set_xlim([0, dots])
-    plot[0,1].set_ylim([0, dots])
+    plot[0,1].set_xlim([-0.5, dots-0.5])
+    plot[0,1].set_ylim([-0.5, dots-0.5])
 
     plot02=plot[0,2].imshow(np.log(density_Ramachandran(sphi, spsi, plot_resol)+1), cmap='hot', interpolation='nearest')
     plo02_cbar=plot[0,2].figure.colorbar(plot02, ax=plot[0,2], shrink=0.7)
@@ -310,8 +310,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[0,2].set_yticklabels(ticklabels_ar)
     plot[0,2].set_xlabel(r'$\phi$')
     plot[0,2].set_ylabel(r'$\psi$')
-    plot[0,2].set_xlim([0, dots])
-    plot[0,2].set_ylim([0, dots])
+    plot[0,2].set_xlim([-0.5, dots-0.5])
+    plot[0,2].set_ylim([-0.5, dots-0.5])
 
     plot10=plot[1,0].imshow(np.log(density_Ramachandran(lphi_N, lpsi_N, plot_resol)+1), cmap='hot', interpolation='nearest')
     plo10_cbar=plot[1,0].figure.colorbar(plot10, ax=plot[1,0], shrink=0.7)
@@ -322,8 +322,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[1,0].set_yticklabels(ticklabels_ar)
     plot[1,0].set_xlabel(r'$\phi$')
     plot[1,0].set_ylabel(r'$\psi$')
-    plot[1,0].set_xlim([0, dots])
-    plot[1,0].set_ylim([0, dots])
+    plot[1,0].set_xlim([-0.5, dots-0.5])
+    plot[1,0].set_ylim([-0.5, dots-0.5])
 
     plot11=plot[1,1].imshow(np.log(density_Ramachandran(lphi_C, lpsi_C, plot_resol)+1), cmap='hot', interpolation='nearest')
     plo11_cbar=plot[1,1].figure.colorbar(plot11, ax=plot[1,1], shrink=0.7)
@@ -334,8 +334,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[1,1].set_yticklabels(ticklabels_ar)
     plot[1,1].set_xlabel(r'$\phi$')
     plot[1,1].set_ylabel(r'$\psi$')
-    plot[1,1].set_xlim([0, dots])
-    plot[1,1].set_ylim([0, dots])
+    plot[1,1].set_xlim([-0.5, dots-0.5])
+    plot[1,1].set_ylim([-0.5, dots-0.5])
 
     plot12=plot[1,2].imshow(np.log(density_Ramachandran(lphi, lpsi, plot_resol)+1), cmap='hot', interpolation='nearest')
     plo12_cbar=plot[1,2].figure.colorbar(plot12, ax=plot[1,2], shrink=0.7)
@@ -346,8 +346,8 @@ def density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N
     plot[1,2].set_yticklabels(ticklabels_ar)
     plot[1,2].set_xlabel(r'$\phi$')
     plot[1,2].set_ylabel(r'$\psi$')
-    plot[1,2].set_xlim([0, dots])
-    plot[1,2].set_ylim([0, dots])
+    plot[1,2].set_xlim([-0.5, dots-0.5])
+    plot[1,2].set_ylim([-0.5, dots-0.5])
 
     plt.tight_layout()
     #plt.savefig(DSSP_data_outpath+'phi_psi_density.png', dpi=100, bbox_inches='tight')
@@ -373,8 +373,8 @@ def ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, 
     plot[0,0].set_yticklabels(ticklabels_ar)
     plot[0,0].set_xlabel(r'$\phi$')
     plot[0,0].set_ylabel(r'$\psi$')
-    plot[0,0].set_xlim([0, dots])
-    plot[0,0].set_ylim([0, dots])
+    plot[0,0].set_xlim([-0.5, dots-0.5])
+    plot[0,0].set_ylim([-0.5, dots-0.5])
 
     ratio_matrix_short_CN = np.divide( density_Ramachandran(sphi_C, spsi_C, plot_resol)+1, density_Ramachandran(sphi_N, spsi_N, plot_resol)+1)
     plot10=plot[1,0].imshow(np.log(ratio_matrix_short_CN), cmap='hot', interpolation='nearest', vmin=0, vmax=2)
@@ -386,8 +386,8 @@ def ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, 
     plot[1,0].set_yticklabels(ticklabels_ar)
     plot[1,0].set_xlabel(r'$\phi$')
     plot[1,0].set_ylabel(r'$\psi$')
-    plot[1,0].set_xlim([0, dots])
-    plot[1,0].set_ylim([0, dots])
+    plot[1,0].set_xlim([-0.5, dots-0.5])
+    plot[1,0].set_ylim([-0.5, dots-0.5])
 
     ratio_matrix_long_NC = np.divide(density_Ramachandran(lphi_N, lpsi_N, plot_resol)+1, density_Ramachandran(lphi_C, lpsi_C, plot_resol)+1)
     plot01=plot[0,1].imshow(np.log(ratio_matrix_long_NC), cmap='hot', interpolation='nearest', vmin=0, vmax=2)
@@ -399,8 +399,8 @@ def ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, 
     plot[0,1].set_yticklabels(ticklabels_ar)
     plot[0,1].set_xlabel(r'$\phi$')
     plot[0,1].set_ylabel(r'$\psi$')
-    plot[0,1].set_xlim([0, dots])
-    plot[0,1].set_ylim([0, dots])
+    plot[0,1].set_xlim([-0.5, dots-0.5])
+    plot[0,1].set_ylim([-0.5, dots-0.5])
 
     ratio_matrix_long_CN = np.divide( density_Ramachandran(lphi_C, lpsi_C, plot_resol)+1, density_Ramachandran(lphi_N, lpsi_N, plot_resol)+1)
     plot11=plot[1,1].imshow(np.log(ratio_matrix_long_CN), cmap='hot', interpolation='nearest', vmin=0, vmax=2)
@@ -412,8 +412,8 @@ def ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, 
     plot[1,1].set_yticklabels(ticklabels_ar)
     plot[1,1].set_xlabel(r'$\phi$')
     plot[1,1].set_ylabel(r'$\psi$')
-    plot[1,1].set_xlim([0, dots])
-    plot[1,1].set_ylim([0, dots])
+    plot[1,1].set_xlim([-0.5, dots-0.5])
+    plot[1,1].set_ylim([-0.5, dots-0.5])
 
     plot02=plot[0,2].imshow(np.log(ratio_matrix_long_NC)-np.log(ratio_matrix_short_NC), cmap='hot', interpolation='nearest', vmin=0)
     plot02_cbar=plot[0,2].figure.colorbar(plot02, ax=plot[0,2], shrink=0.7)
@@ -424,20 +424,20 @@ def ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, 
     plot[0,2].set_yticklabels(ticklabels_ar)
     plot[0,2].set_xlabel(r'$\phi$')
     plot[0,2].set_ylabel(r'$\psi$')
-    plot[0,2].set_xlim([0, dots])
-    plot[0,2].set_ylim([0, dots])
+    plot[0,2].set_xlim([-0.5, dots-0.5])
+    plot[0,2].set_ylim([-0.5, dots-0.5])
 
     plot12=plot[1,2].imshow(np.log(ratio_matrix_long_CN)-np.log(ratio_matrix_short_CN), cmap='hot', interpolation='nearest', vmin=0)
     plot12_cbar=plot[1,2].figure.colorbar(plot12, ax=plot[1,2], shrink=0.7)
-    plot[1,2].set_title(r'lg(long(С/N)/short(C/N))')
+    plot[1,2].set_title(r'lg(long(C/N)/short(C/N))')
     plot[1,2].set_xticks(ticks_ar)
     plot[1,2].set_xticklabels(ticklabels_ar)
     plot[1,2].set_yticks(ticks_ar)
     plot[1,2].set_yticklabels(ticklabels_ar)
     plot[1,2].set_xlabel(r'$\phi$')
     plot[1,2].set_ylabel(r'$\psi$')
-    plot[1,2].set_xlim([0, dots])
-    plot[1,2].set_ylim([0, dots])
+    plot[1,2].set_xlim([-0.5, dots-0.5])
+    plot[1,2].set_ylim([-0.5, dots-0.5])
 
     plt.tight_layout()
     #plt.savefig(DSSP_data_outpath+'phi_psi_ratio.png', dpi=100, bbox_inches='tight')
@@ -459,8 +459,12 @@ def wrapper(DSSP_inpath):
     window_width=50
     local_window_width=50
     
+    #Define resolution of Ramachandran plot binning.
+    plot_resol=20
+    
     #Read DSSP data.
     DSSP_data_dict=read_dssp_data(DSSP_inpath)
+    
     #Classify domains by length.
     Short_structures, Long_structures=define_length_groups(DSSP_data_dict, min_len, thr_len)
     
@@ -469,14 +473,14 @@ def wrapper(DSSP_inpath):
     lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi=phi_psi_N_to_C(Long_structures, window_width)
     
     #Create Ramachandran plots.
-    plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
-    plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    #plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
+    #plot_Ramachandran_KDE(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi)
     
     #Create Ramachandran density plots.
-    density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi, plot_resol=1)
+    density_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi, plot_resol)
     
     #Get ratio of Ramachandran densityy plots.
-    ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi, plot_resol=1)    
+    ratio_plot_Ramachandran(sphi_N, sphi_C, spsi_N, spsi_C, sphi, spsi, lphi_N, lphi_C, lpsi_N, lpsi_C, lphi, lpsi, plot_resol)    
     
     return
 
