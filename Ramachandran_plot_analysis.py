@@ -456,8 +456,8 @@ def wrapper(DSSP_inpath):
     thr_len=130
     
     #Define distance from termini to analyse.
-    window_width=50
-    local_window_width=50
+    window_width=25
+    local_window_width=25
     
     #Define resolution of Ramachandran plot binning.
     plot_resol=20
